@@ -1,0 +1,5 @@
+Flask==3.1.0
+requests==2.32.3
+cachetools==5.5.0
+tls-client==1.0.1
+typing-extensions==4.12.2
