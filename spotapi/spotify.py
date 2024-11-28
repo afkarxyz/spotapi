@@ -5,106 +5,11 @@ from typing import Any
 from collections.abc import Mapping, Generator
 from spotapi.types.annotations import enforce
 
-from spotapi.exceptions import PlaylistError, TrackError, AlbumError
+from spotapi.exceptions import TrackError, AlbumError, PlaylistError
 from spotapi.http.request import TLSClient
 from spotapi.client import BaseClient
 
-__all__ = ["PublicPlaylist", "PublicTrack", "PublicAlbum", "PlaylistError", "TrackError", "AlbumError"]
-
-
-@enforce
-class PublicPlaylist:
-    """
-    Allows you to get all public information on a playlist.
-    No login is required.
-
-    Parameters
-    ----------
-    playlist (Optional[str]): The Spotify URI of the playlist.
-    client (TLSClient): An instance of TLSClient to use for requests.
-    """
-
-    __slots__ = (
-        "base",
-        "playlist_id",
-        "playlist_link",
-    )
-
-    def __init__(
-        self,
-        playlist: str | None = None,
-        /,
-        *,
-        client: TLSClient = TLSClient("chrome_120", "", auto_retries=3),
-    ) -> None:
-        self.base = BaseClient(client=client)
-
-        if playlist:
-            self.playlist_id = (
-                playlist.split("playlist/")[-1] if "playlist" in playlist else playlist
-            )
-            self.playlist_link = f"https://open.spotify.com/playlist/{self.playlist_id}"
-
-    def get_playlist_info(
-        self, limit: int = 25, *, offset: int = 0
-    ) -> Mapping[str, Any]:
-        """Gets the public playlist information"""
-        if not self.playlist_id:
-            raise ValueError("Playlist ID not set")
-
-        url = "https://api-partner.spotify.com/pathfinder/v1/query"
-        params = {
-            "operationName": "fetchPlaylist",
-            "variables": json.dumps(
-                {
-                    "uri": f"spotify:playlist:{self.playlist_id}",
-                    "offset": offset,
-                    "limit": limit,
-                }
-            ),
-            "extensions": json.dumps(
-                {
-                    "persistedQuery": {
-                        "version": 1,
-                        "sha256Hash": self.base.part_hash("fetchPlaylist"),
-                    }
-                }
-            ),
-        }
-
-        resp = self.base.client.post(url, params=params, authenticate=True)
-
-        if resp.fail:
-            raise PlaylistError("Could not get playlist info", error=resp.error.string)
-
-        if not isinstance(resp.response, Mapping):
-            raise PlaylistError("Invalid JSON")
-
-        return resp.response
-
-    def paginate_playlist(self) -> Generator[Mapping[str, Any], None, None]:
-        """
-        Generator that fetches playlist information in chunks
-
-        Note: If total_tracks <= 343, then there is no need to paginate
-        """
-        UPPER_LIMIT: int = 343
-        # We need to get the total playlists first
-        playlist = self.get_playlist_info(limit=UPPER_LIMIT)
-        total_count: int = playlist["data"]["playlistV2"]["content"]["totalCount"]
-
-        yield playlist["data"]["playlistV2"]["content"]
-
-        if total_count <= UPPER_LIMIT:
-            return
-
-        offset = UPPER_LIMIT
-        while offset < total_count:
-            yield self.get_playlist_info(limit=UPPER_LIMIT, offset=offset)["data"][
-                "playlistV2"
-            ]["content"]
-            offset += UPPER_LIMIT
-
+__all__ = ["PublicTrack", "PublicAlbum", "PublicPlaylist", "TrackError", "AlbumError", "PlaylistError"]
 
 @enforce
 class PublicTrack:
@@ -260,4 +165,97 @@ class PublicAlbum:
             yield self.get_album_info(limit=UPPER_LIMIT, offset=offset, locale=locale)["data"][
                 "albumUnion"
             ]["tracks"]
+            offset += UPPER_LIMIT
+            
+@enforce
+class PublicPlaylist:
+    """
+    Allows you to get all public information on a playlist.
+    No login is required.
+
+    Parameters
+    ----------
+    playlist (Optional[str]): The Spotify URI of the playlist.
+    client (TLSClient): An instance of TLSClient to use for requests.
+    """
+
+    __slots__ = (
+        "base",
+        "playlist_id",
+        "playlist_link",
+    )
+
+    def __init__(
+        self,
+        playlist: str | None = None,
+        /,
+        *,
+        client: TLSClient = TLSClient("chrome_120", "", auto_retries=3),
+    ) -> None:
+        self.base = BaseClient(client=client)
+
+        if playlist:
+            self.playlist_id = (
+                playlist.split("playlist/")[-1] if "playlist" in playlist else playlist
+            )
+            self.playlist_link = f"https://open.spotify.com/playlist/{self.playlist_id}"
+
+    def get_playlist_info(
+        self, limit: int = 25, *, offset: int = 0
+    ) -> Mapping[str, Any]:
+        """Gets the public playlist information"""
+        if not self.playlist_id:
+            raise ValueError("Playlist ID not set")
+
+        url = "https://api-partner.spotify.com/pathfinder/v1/query"
+        params = {
+            "operationName": "fetchPlaylist",
+            "variables": json.dumps(
+                {
+                    "uri": f"spotify:playlist:{self.playlist_id}",
+                    "offset": offset,
+                    "limit": limit,
+                }
+            ),
+            "extensions": json.dumps(
+                {
+                    "persistedQuery": {
+                        "version": 1,
+                        "sha256Hash": self.base.part_hash("fetchPlaylist"),
+                    }
+                }
+            ),
+        }
+
+        resp = self.base.client.post(url, params=params, authenticate=True)
+
+        if resp.fail:
+            raise PlaylistError("Could not get playlist info", error=resp.error.string)
+
+        if not isinstance(resp.response, Mapping):
+            raise PlaylistError("Invalid JSON")
+
+        return resp.response
+
+    def paginate_playlist(self) -> Generator[Mapping[str, Any], None, None]:
+        """
+        Generator that fetches playlist information in chunks
+
+        Note: If total_tracks <= 343, then there is no need to paginate
+        """
+        UPPER_LIMIT: int = 343
+        # We need to get the total playlists first
+        playlist = self.get_playlist_info(limit=UPPER_LIMIT)
+        total_count: int = playlist["data"]["playlistV2"]["content"]["totalCount"]
+
+        yield playlist["data"]["playlistV2"]["content"]
+
+        if total_count <= UPPER_LIMIT:
+            return
+
+        offset = UPPER_LIMIT
+        while offset < total_count:
+            yield self.get_playlist_info(limit=UPPER_LIMIT, offset=offset)["data"][
+                "playlistV2"
+            ]["content"]
             offset += UPPER_LIMIT
