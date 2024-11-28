@@ -1,9 +1,7 @@
 ## About
 A lightweight Python wrapper for Spotify, providing quick access to track, album, and playlist metadata without requiring a Spotify API key. SpotAPI uses browser-like requests to replicate Spotify's web interactions seamlessly, offering easy integration with minimal code.
 
-## Usage
-
-### API Endpoints
+## API Endpoints Usage
 
 #### Get Track Metadata
 ```
