@@ -153,9 +153,9 @@ class PublicAlbum:
         UPPER_LIMIT: int = 50
         # We need to get the total tracks first
         album = self.get_album_info(limit=UPPER_LIMIT, locale=locale)
-        total_count: int = album["data"]["albumUnion"]["tracks"]["totalCount"]
+        total_count: int = album["data"]["albumUnion"]["tracksV2"]["totalCount"]
 
-        yield album["data"]["albumUnion"]["tracks"]
+        yield album["data"]["albumUnion"]["tracksV2"]
 
         if total_count <= UPPER_LIMIT:
             return
@@ -164,7 +164,7 @@ class PublicAlbum:
         while offset < total_count:
             yield self.get_album_info(limit=UPPER_LIMIT, offset=offset, locale=locale)["data"][
                 "albumUnion"
-            ]["tracks"]
+            ]["tracksV2"]
             offset += UPPER_LIMIT
             
 @enforce
