@@ -1,10 +1,10 @@
 __all__ = [
     "ParentException",
-    "PlaylistError",
-    "AlbumError",
-    "TrackError",
-    "BaseClientError",
     "RequestError",
+    "BaseClientError",
+    "TrackError",
+    "AlbumError",
+    "PlaylistError",
 ]
 
 class ParentException(Exception):
@@ -12,17 +12,17 @@ class ParentException(Exception):
         super().__init__(message)
         self.error = error
 
-class PlaylistError(ParentException):
-    pass
-
-class AlbumError(ParentException):
-    pass
-
-class TrackError(ParentException):
+class RequestError(ParentException):
     pass
 
 class BaseClientError(ParentException):
     pass
 
-class RequestError(ParentException):
+class TrackError(ParentException):
+    pass
+
+class AlbumError(ParentException):
+    pass
+
+class PlaylistError(ParentException):
     pass
